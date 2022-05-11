@@ -33,6 +33,7 @@ from _pytest.fixtures import SubRequest
 import gpflow
 from gpflow.base import RegressionData
 from gpflow.config import default_float
+from gpflow.experimental.check_shapes import check_shapes
 from gpflow.inducing_variables import InducingPoints, InducingVariables
 from gpflow.kernels import Kernel, Matern52
 from gpflow.likelihoods import Exponential, Likelihood
@@ -114,6 +115,11 @@ def create_inducing_points(data: RegressionData) -> InducingPoints:
     return InducingPoints(Z)
 
 
+@check_shapes(
+    "inducing_variable: [M, D, L]",
+    "return[1]: [M_x_L, P]",
+    "return[2]: [M_x_L, P]",
+)
 def create_q(
     inducing_variable: InducingVariables, *, row_scale: int = 1, column_scale: int = 1
 ) -> Tuple[bool, tf.Tensor, tf.Tensor]:
@@ -237,6 +243,9 @@ def _model_factory(request: SubRequest) -> _ModelFactory[Any]:
 
 
 @pytest.fixture
+@check_shapes(
+    "return: [Q, D]",
+)
 def _f_minimum(_model_factory: _ModelFactory[Any]) -> tf.Tensor:
     return (
         tf.constant(
@@ -254,6 +263,10 @@ def _f_minimum(_model_factory: _ModelFactory[Any]) -> tf.Tensor:
 
 @pytest.fixture
 def _f(_f_minimum: tf.Tensor) -> Callable[[tf.Tensor], tf.Tensor]:
+    @check_shapes(
+        "X: [N, D]",
+        "return: [N, Q]",
+    )
     def f(X: tf.Tensor) -> tf.Tensor:
         err = X[:, None, :] - _f_minimum[None, :, :]
         err_sq = err ** 2
@@ -263,6 +276,11 @@ def _f(_f_minimum: tf.Tensor) -> Callable[[tf.Tensor], tf.Tensor]:
 
 
 @pytest.fixture
+@check_shapes(
+    "_f_minimum: [Q, D]",
+    "return[0]: [N, D]",
+    "return[1]: [N, Q]",
+)
 def _data(
     _f: Callable[[tf.Tensor], tf.Tensor], _f_minimum: tf.Tensor
 ) -> Tuple[tf.Variable, tf.Variable]:
@@ -313,6 +331,11 @@ def _extend_data(
 
 
 @pytest.fixture
+@check_shapes(
+    "_data[0]: [N, D]",
+    "_data[1]: [N, Q]",
+    "return: [M, D]",
+)
 def _X_new(_data: Tuple[tf.Variable, tf.Variable]) -> tf.Tensor:
     rng = np.random.default_rng(20220128)
     X, _Y = _data

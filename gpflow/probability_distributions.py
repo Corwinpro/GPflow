@@ -17,6 +17,7 @@
 # probability distributions. The TensorFlow "distributions" framework would
 # be a good replacement.
 from .base import TensorType
+from .experimental.check_shapes import check_shapes
 
 
 class ProbabilityDistribution:
@@ -27,15 +28,23 @@ class ProbabilityDistribution:
 
 
 class Gaussian(ProbabilityDistribution):
+    @check_shapes(
+        "mu: [N, D]",
+        "cov: [N, D, D]",
+    )
     def __init__(self, mu: TensorType, cov: TensorType):
-        self.mu = mu  # [N, D]
-        self.cov = cov  # [N, D, D]
+        self.mu = mu
+        self.cov = cov
 
 
 class DiagonalGaussian(ProbabilityDistribution):
+    @check_shapes(
+        "mu: [N, D]",
+        "cov: [N, D]",
+    )
     def __init__(self, mu: TensorType, cov: TensorType):
-        self.mu = mu  # [N, D]
-        self.cov = cov  # [N, D]
+        self.mu = mu
+        self.cov = cov
 
 
 class MarkovGaussian(ProbabilityDistribution):
@@ -48,6 +57,10 @@ class MarkovGaussian(ProbabilityDistribution):
     Cov[x_t, x_{t+1}] = cov[t, :, :] * cov[t+1, :, :]
     """
 
+    @check_shapes(
+        "mu: [N_plus_1, D]",
+        "cov: [2, N_plus_1, D, D]",
+    )
     def __init__(self, mu: TensorType, cov: TensorType):
-        self.mu = mu  # N+[1, D]
-        self.cov = cov  # 2 x (N+1)[, D, D]
+        self.mu = mu
+        self.cov = cov

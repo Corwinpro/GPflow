@@ -1,0 +1,26 @@
+TODO:
+
+gpflow.expectations + tests.gpflow.expectations
+gpflow.experimental + tests.gpflow.experimental
+gpflow.likelihoods + tests.gpflow.likelihoods
+gpflow.models + tests.gpflow.models
+gpflow.optimizers + tests.gpflow.optimizers
+tests.integration
+
+In progress:
+
+
+Ready for review:
+
+gpflow.covariances + tests.gpflow.covariances
+gpflow.kernels + tests.gpflow.kernels
+gpflow.monitor
+gpflow.quadrature + tests.gpflow.quadrature
+gpflow.* + tests.gpflow.posteriors
+
+Done:
+
+gpflow.conditionals + tests.gpflow.conditionals
+gpflow.config + tests.gpflow.config
+gpflow.inducing_variables
+gpflow.utilities + tests.gpflow.utilities
