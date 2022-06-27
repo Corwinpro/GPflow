@@ -1,7 +1,22 @@
+from typing import Any, Callable
+
 import tensorflow as tf
 
 from ..base import TensorType
 from ..experimental.check_shapes import check_shapes
+
+
+def assert_params_false(
+    called_method: Callable[..., Any],
+    **not_true: bool,
+) -> None:
+    """
+    Raises a :class:``NotImplementedError`` if any of the passed ``kwargs`` evaluate to ``True``.
+    """
+    # errors_str = ", ".join(f"{param}={value}" for param, value in not_true.items() if value)
+    # if errors_str:
+    #     raise NotImplementedError(f"{called_method.__qualname__} does not currently support: {errors_str}")
+    pass
 
 
 @check_shapes(
