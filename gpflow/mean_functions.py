@@ -26,13 +26,15 @@ allows this to be done whilst additionally learning parameters of the
 parametric function.
 """
 
-from typing import Collection, Optional
+from typing import Collection, Iterator, Optional, Tuple
 
 import numpy as np
 import tensorflow as tf
 
 from .base import Module, Parameter, TensorType
 from .config import default_float, default_int
+from .experimental.check_shapes import check_shape as cs
+from .experimental.check_shapes import check_shapes
 
 
 class MeanFunction(Module):
@@ -150,6 +152,46 @@ class Zero(Constant):
     def __call__(self, X: TensorType) -> tf.Tensor:
         output_shape = tf.concat([tf.shape(X)[:-1], [self.output_dim]], axis=0)
         return tf.zeros(output_shape, dtype=X.dtype)
+
+
+class Polynomial(MeanFunction):
+    """
+    A generic polynomial mean function.
+    """
+
+    @check_shapes("w: [broadcast output_dim, broadcast n_terms]")
+    def __init__(
+        self, degree: int, input_dim: int = 1, output_dim: int = 1, w: Optional[TensorType] = None
+    ) -> None:
+        """
+        :param degree: The degree of the polynomial.
+        :param input_dim: Number of inputs / variables this polynomial is defined over.
+        :param output_dim: Number of outputs / polynomials.
+        :param w: Initial weights of the terms of the polynomial.
+        """
+        powers = cs(tuple(self._compute_powers(degree, input_dim)), "[n_terms, input_dim]")
+        if w is None:
+            w = cs([1.0] + (len(powers) - 1) * [0.0], "[n_terms]")
+        w_shape = (output_dim, len(powers))
+        self.powers = tf.constant(powers, dtype=default_float())
+        self.w = Parameter(tf.broadcast_to(w, w_shape))
+
+    def _compute_powers(self, degree: int, input_dim: int) -> Iterator[Tuple[int, ...]]:
+        if not input_dim:
+            yield ()
+            return
+        for i in range(degree + 1):
+            for inner in self._compute_powers(degree - i, input_dim - 1):
+                yield (i,) + inner
+
+    @check_shapes(
+        "X: [batch..., input_dim]",
+        "return: [batch..., output_dim]",
+    )
+    def __call__(self, X: TensorType) -> tf.Tensor:
+        raised = cs(tf.pow(X[..., None, :], self.powers), "[batch..., n_terms, input_dim]")
+        prod = cs(tf.math.reduce_prod(raised, axis=-1), "[batch..., n_terms]")
+        return tf.einsum("...i,ji->...j", prod, self.w)
 
 
 class SwitchedMeanFunction(MeanFunction):
